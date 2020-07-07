@@ -72,4 +72,4 @@ with open("weibo.html", "r", encoding="utf-8") as fr:
 
         pprint(d)
 
-        print("======================done===============")
+        print("=====================================")
