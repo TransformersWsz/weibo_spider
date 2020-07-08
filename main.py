@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from pprint import pprint as print
+from pprint import pprint
 import json
 import re
 import time
@@ -9,7 +9,7 @@ url = "https://s.weibo.com/weibo/%25E5%259C%25A8%25E7%25BA%25BF%25E6%2595%2599%2
 
 s_headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.68 Safari/537.36 Edg/84.0.522.28",
-    "Cookie": "SINAGLOBAL=6761572192214.149.1590379231528; SSOLoginState=1594090574; _s_tentry=login.sina.com.cn; Apache=4564164926965.429.1594090581416; UOR=,,login.sina.com.cn; ULV=1594090581447:6:3:2:4564164926965.429.1594090581416:1594033185529; wvr=6; webim_unReadCount=%7B%22time%22%3A1594175407557%2C%22dm_pub_total%22%3A2%2C%22chat_group_client%22%3A0%2C%22chat_group_notice%22%3A0%2C%22allcountNum%22%3A2%2C%22msgbox%22%3A0%7D; SCF=AvAg04NFIWjzdUrCsc_W24v02abdujuIleCVkwsiPATSDWeXoh5mp5J8xx442-tiAMsrK-_88M6zmKOMAtqJdZM.; SUB=_2A25yAU05DeRhGeNH6FYS9CzPyDSIHXVRdznxrDV8PUNbmtAKLUTbkW9NStPFkwrrIcJ7__NVsQcUiqrBthUZ7i8c; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5ZoBfZykY5Ib0UaOb6xx.65JpX5KMhUgL.Fo-4e0B0Shz0e0n2dJLoIEQLxK-LBKBLBK.LxK-LBo2LBo2LxK-L1h.L1K2LxK-LB--LBKzp1K.pehMt; SUHB=0z1wUf2dzPCjxh; ALF=1625714825"
+    "Cookie": "SINAGLOBAL=6761572192214.149.1590379231528; UOR=,,login.sina.com.cn; wvr=6; ALF=1625748675; SSOLoginState=1594212676; SCF=AvAg04NFIWjzdUrCsc_W24v02abdujuIleCVkwsiPATS5bGWFq0BFZlelfpbtF8kMubdQ3FCrDgqbLqYtGhxYMw.; SUB=_2A25yAbEXDeRhGeNH6FYS9CzPyDSIHXVRdqXfrDV8PUNbmtANLVHXkW9NStPFk5Lhf6Kr-1cD5BlK9hVz3syNMKeQ; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5ZoBfZykY5Ib0UaOb6xx.65JpX5KzhUgL.Fo-4e0B0Shz0e0n2dJLoIEQLxK-LBKBLBK.LxK-LBo2LBo2LxK-L1h.L1K2LxK-LB--LBKzp1K.pehMt; SUHB=0Yhh94k6Ao1bU-; _s_tentry=login.sina.com.cn; Apache=9588005215838.537.1594212685021; ULV=1594212685128:7:4:3:9588005215838.537.1594212685021:1594090581447; webim_unReadCount=%7B%22time%22%3A1594212691980%2C%22dm_pub_total%22%3A2%2C%22chat_group_client%22%3A0%2C%22chat_group_notice%22%3A0%2C%22allcountNum%22%3A2%2C%22msgbox%22%3A0%7D"
 }
 
 s_params = {
@@ -32,6 +32,7 @@ c_headers = {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.68 Safari/537.36 Edg/84.0.522.28"
 }
 
+
 def get_comment_identification(href):
     begin = 0
     end = 0
@@ -43,11 +44,9 @@ def get_comment_identification(href):
     return href[begin:end]
 
 
-data = []
 for i in range(36):    # 共36页
     s_params["page"] = str(i+1)
     r = requests.get(url, params=s_params, headers=s_headers)
-    print(r.text)
 
     soup = BeautifulSoup(r.text, "lxml")
     card_wraps = soup.find_all("div", attrs={"action-type": "feed_list_item"})
@@ -79,49 +78,51 @@ for i in range(36):    # 共36页
 
 
         # Second Part: 爬取该条微博的所有评论
-        d["comments"] = []
-        comment_url = "https://weibo.cn/comment/{}?page={}"
-        for i in range(50):
-            comment_url = comment_url.format(d["comment_identification"], i+1)
-            c_r = requests.get(comment_url, headers=c_headers)
-            c_soup = BeautifulSoup(c_r.text, "lxml")
-
-            def has_class_id(tag):
-                return tag.has_attr("class") and "c" in tag.get("class") and tag.has_attr("id") and tag.get("id").find("C_") == 0
-
-            comments = c_soup.find_all(has_class_id)
-            if len(comments) == 0:
-                break
-            else:
-                for item in comments:
-                    temp = {}
-                    temp["current_comment_page"] = i+1
-
-                    line = item.get_text()
-                    nick_suffix = line.find(":")
-                    temp["reviewer"] = line[:nick_suffix].strip()
-
-                    jb_suffix = line.find("举报")
-                    temp["content"] = line[nick_suffix+1:jb_suffix].strip()
-
-                    later = line[jb_suffix:]
-                    hf = later.find("回复")
-                    lz = later.find("来自")
-                    temp["datetime"] = later[hf+2:lz].strip()
-
-                    d["comments"].append(temp)
-                    print(temp)
-
-                    print("=====================================")
-            time.sleep(2)
-            print("当前第{}评论页爬取结束！\n".format(i+1))
-        data.append(d)
-        time.sleep(5)
-    
-        with open("data.json", "w", encoding="utf-8") as fw:
-            json.dump(data, fw, ensure_ascii=False)
+        # d["comments"] = []
+        # for c_i in range(50):
+        #     comment_url = "https://weibo.cn/comment/{}?page={}".format(d["comment_identification"], c_i+1)
+        #     c_r = requests.get(comment_url, headers=c_headers)
+        #     print("current_url:> ", comment_url)
             
-        print("当前第{}微博面爬取结束！\n".format(idx+1))
+        #     c_soup = BeautifulSoup(c_r.text, "lxml")
+
+        #     def has_class_id(tag):
+        #         return tag.has_attr("class") and "c" in tag.get("class") and tag.has_attr("id") and tag.get("id").find("C_") == 0
+
+        #     comments = c_soup.find_all(has_class_id)
+        #     if len(comments) == 0:
+        #         break
+        #     else:
+        #         for item in comments:
+        #             temp = {}
+        #             temp["current_comment_page"] = c_i+1
+
+        #             line = item.get_text()
+        #             nick_suffix = line.find(":")
+        #             temp["reviewer"] = line[:nick_suffix].strip()
+
+        #             jb_suffix = line.find("举报")
+        #             temp["content"] = line[nick_suffix+1:jb_suffix].strip()
+
+        #             later = line[jb_suffix:]
+        #             hf = later.find("回复")
+        #             lz = later.find("来自")
+        #             temp["datetime"] = later[hf+2:lz].strip()
+
+        #             d["comments"].append(temp)
+        #             pprint(temp)
+
+        #             print("=====================================")
+        #     time.sleep(10)
+        #     print("当前第{}评论页爬取结束！\n".format(c_i+1))
+        time.sleep(10)
+    
+        with open("./link/{}.json".format(d["comment_identification"]), "w", encoding="utf-8") as fw:
+            json.dump(d, fw, ensure_ascii=False, indent=4)
+        pprint(d)
+        print("============================================================")
+            
+    print("当前第{}微博面爬取结束！\n".format(i+1))
 
 
 
