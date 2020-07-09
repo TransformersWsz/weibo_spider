@@ -5,12 +5,17 @@ import json
 import re
 import time
 import glob
+import os
+import random
 
+from config import dirname
 
+comment_dir = "./{}/comment".format(dirname)
+idfiles = glob.glob("./{}/link/*.json".format(dirname))
 
 c_headers = {
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-    "cookie": "_T_WM=46026963971; ALF=1596804676; SCF=AvAg04NFIWjzdUrCsc_W24v02abdujuIleCVkwsiPATSlPtON0FTL0ud5t4S69fu9K6EaQgrYwnRVh_g2IeMSq0.; SUB=_2A25yAY3tDeRhGeNH6FYS9CzPyDSIHXVRDROlrDV6PUJbktAKLWT4kW1NStPFkz2taCZ2p6DXY5W625diwGmlzBho; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5ZoBfZykY5Ib0UaOb6xx.65JpX5K-hUgL.Fo-4e0B0Shz0e0n2dJLoIEQLxK-LBKBLBK.LxK-LBo2LBo2LxK-L1h.L1K2LxK-LB--LBKzp1K.pehMt; SUHB=0idbWDPGNxPKIp; SSOLoginState=1594228157",
+    "cookie": "_T_WM=46026963971; ALF=1596804676; SCF=AvAg04NFIWjzdUrCsc_W24v02abdujuIleCVkwsiPATSlPtON0FTL0ud5t4S69fu9K6EaQgrYwnRVh_g2IeMSq0.; SUB=_2A25yAY3tDeRhGeNH6FYS9CzPyDSIHXVRDROlrDV6PUJbktAKLWT4kW1NStPFkz2taCZ2p6DXY5W625diwGmlzBho; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5ZoBfZykY5Ib0UaOb6xx.65JpX5K-hUgL.Fo-4e0B0Shz0e0n2dJLoIEQLxK-LBKBLBK.LxK-LBo2LBo2LxK-L1h.L1K2LxK-LB--LBKzp1K.pehMt; SUHB=0idbWDPGNxPKIp",
     "sec-ch-ua-mobile": "?0",
     "sec-fetch-dest": "document",
     "sec-fetch-mode": "navigate",
@@ -27,14 +32,11 @@ def get_comment_identification(href):
     f = re.finditer("/", href)
     for i in f:
         begin = i.span()[1]
-
     end = href.find("?")
     return href[begin:end]
 
 
-idfiles = glob.glob("./link/*.json")
 for json_file in idfiles:
-    
     with open(json_file, "r", encoding="utf-8") as fr:
         json_data = json.load(fr)
 
@@ -75,10 +77,11 @@ for json_file in idfiles:
 
                     pprint(temp)
                     print("=====================================")
-            time.sleep(10)
+            
             print("当前第{}评论页爬取结束！\n".format(c_i+1))
+            time.sleep(random.uniform(7, 10))
 
-        with open("./comment/{}".format(json_data["comment_identification"]), "w", encoding="utf-8") as fw:
+        with open(os.path.join(comment_dir, "{}.json".format(json_data["comment_identification"])), "w", encoding="utf-8") as fw:
             json.dump(d, fw, ensure_ascii=False, indent=4)
         print("<------------------{}全部评论爬取结束---------------------->".format(json_data["comment_identification"]))
 print("\n done! \n")
